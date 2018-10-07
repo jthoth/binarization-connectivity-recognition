@@ -3,7 +3,7 @@ import argparse
 import numpy as np
 from time import time
 
-from skimage import io, color, img_as_uint
+from skimage import io, color, img_as_float
 from scipy import ndimage
 from module import threshold
 from module import components
@@ -54,14 +54,14 @@ class Program(object):
         return new_img
 
     def save_contour(self, c_components):
-        contour_bound = np.ones(shape=(1, 1))
+        contour_bound = np.ones(shape=(1, 1), dtype=np.uint8)
         for _components in c_components.values():
             new_image = np.ones(shape=_components.shape)
             _contour = contour.ContourDetection(_components)
             for coordinates in _contour.get():
                 new_image[coordinates] = 0
             contour_bound = self.concat_images(contour_bound, new_image)
-        image = img_as_uint(contour_bound)
+        image = img_as_float(contour_bound)
         io.imsave(self.args.output_contour, image)
 
     def get_features_from_samples(self, root, files):
@@ -87,6 +87,8 @@ class Program(object):
         return np.array(sample_features).mean(axis=0)
 
     def load_samples(self):
+        init = time()
+        print('Loading samples to learn applying the mean....')
         label, classes = list(), dict()
 
         for i, (root, dirs, files) in enumerate(os.walk(self.args.samples)):
@@ -98,6 +100,7 @@ class Program(object):
                 )
         if len(classes) < 1:
             raise ValueError('The algorithm need samples to predict the input')
+        print('Loaded.... time executed : {} ms'.format(time() - init))
         return classes
 
     def save_prediction(self, result):
@@ -138,7 +141,7 @@ class Program(object):
         self.save_contour(connected_components)
         self.save_bound_box_detected(bounder_box)
 
-        print('Ending.... time executed : {}ms'.format(time() - init))
+        print('Predicting.... time executed : {} ms'.format(time() - init))
 
 
 def main():
