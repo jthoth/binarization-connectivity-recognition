@@ -1,6 +1,7 @@
 import os
 import argparse
 import numpy as np
+from time import time
 
 from skimage import io, color
 from scipy import ndimage
@@ -69,6 +70,8 @@ class Program(object):
                 classes.__setitem__(
                     label[i - 1], self.get_features_from_samples(root, files)
                 )
+        if len(classes) < 1:
+            raise ValueError('The algorithm need samples to predict the input')
         return classes
 
     def save_prediction(self, result):
@@ -90,10 +93,12 @@ class Program(object):
                          for samples_prediction in sample_cases.values()
                          ]
             rut_output += str(labels[int(np.argmin(distances))])
-
+        print('Rut computed: {}'.format(rut_output))
         self.save_prediction(rut_output)
 
     def run(self):
+        init = time()
+        print('Initializing....')
         image = self.load_threshold_sample()
         c_components = self.get_components(image)
         bounder_box = box.BoundBox(
@@ -101,6 +106,7 @@ class Program(object):
         )
         self.predict(bounder_box.get())
         self.save_bound_box_detected(bounder_box)
+        print('Ending.... time executed : {}ms'.format(time() - init))
 
 
 def main():
