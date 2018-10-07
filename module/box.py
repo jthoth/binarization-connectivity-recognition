@@ -14,7 +14,8 @@ class BoundBox(object):
         """
         self.components_coordinates = dict()
         self.__constrains(components)
-        self.padding = self.padding_structure(padding)
+        self.padding = padding
+        self.padding_args = self.padding_structure(padding)
         self.components = components.copy()
         self.exclude = exclude
         self.image = image
@@ -34,8 +35,9 @@ class BoundBox(object):
     def __update_component(self, label,  component):
         percentiles = np.percentile(component, (0, 100), axis=0)
         (min_y, min_x), (max_y, max_x) = percentiles.astype(int)
-        bound_box = self.image[min_y:max_y, min_x:max_x]
-        bound_box = np.pad(bound_box, **self.padding)
+        bound_box = self.image[min_y - self.padding: max_y + self.padding,
+                               min_x - self.padding: max_x + self.padding]
+        bound_box = np.pad(bound_box, **self.padding_args)
         self.components.__setitem__(label, bound_box)
         self.components_coordinates.__setitem__(
             label, ((min_y, min_x), (max_y, max_x))

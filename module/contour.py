@@ -58,16 +58,17 @@ class ContourDetection(object):
         :param init_points: first point or p0
         :return:
         """
-        _image_contour_coord, _index = list(), 0
+        _image_contour_coord, _index, infinite = list(), 0, 0
         _image_contour_coord.append(init_points)
         h, w = init_points
 
-        while True:
+        while True and infinite < 100000:
             _index, (h, w) = self._next_inner_point(h, w)
             self.set_feature_direction(_index)
             self.neighbours = (self.neighbours[_index - 1:] +
                                self.neighbours[:_index - 1])
             _image_contour_coord.append((h, w))
+            infinite += 1
             if _image_contour_coord[0] == (h, w):
                 break
 
