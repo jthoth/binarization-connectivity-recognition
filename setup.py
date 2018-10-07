@@ -3,7 +3,7 @@ import argparse
 import numpy as np
 from time import time
 
-from skimage import io, color
+from skimage import io, color, img_as_uint
 from scipy import ndimage
 from module import threshold
 from module import components
@@ -37,6 +37,32 @@ class Program(object):
         )
         image = bound_box_drawer.draw([255, 0, 0])
         io.imsave(self.args.output_image, image)
+
+    @staticmethod
+    def concat_images(img_a, img_b):
+
+        ha, wa = img_a.shape[: 2]
+        hb, wb = img_b.shape[: 2]
+
+        max_height = np.max([ha, hb])
+        total_width = wa + wb
+
+        new_img = np.ones(shape=(max_height, total_width))
+        new_img[: ha, : wa] = img_a
+        new_img[: hb, wa: wa + wb] = img_b
+
+        return new_img
+
+    def save_contour(self, c_components):
+        contour_bound = np.ones(shape=(1, 1))
+        for _components in c_components.values():
+            new_image = np.ones(shape=_components.shape)
+            _contour = contour.ContourDetection(_components)
+            for coordinates in _contour.get():
+                new_image[coordinates] = 0
+            contour_bound = self.concat_images(contour_bound, new_image)
+        image = img_as_uint(contour_bound)
+        io.imsave(self.args.output_contour, image)
 
     def get_features_from_samples(self, root, files):
         """
@@ -99,13 +125,19 @@ class Program(object):
     def run(self):
         init = time()
         print('Initializing....')
+
         image = self.load_threshold_sample()
         c_components = self.get_components(image)
         bounder_box = box.BoundBox(
             image, c_components, padding=self.args.pad
         )
-        self.predict(bounder_box.get())
+
+        connected_components = bounder_box.get()
+        self.predict(connected_components)
+
+        self.save_contour(connected_components)
         self.save_bound_box_detected(bounder_box)
+
         print('Ending.... time executed : {}ms'.format(time() - init))
 
 
@@ -121,7 +153,9 @@ def main():
     parser.add_argument('-oi', '--output_image', help='Output image bounding box',
                         default='result/bounding_box.jpg'
                         )
-
+    parser.add_argument('-oc', '--output_contour', help='Output image contour ',
+                        default='result/contour.jpg'
+                        )
     parser.add_argument('-of', '--output_file', help='Output file name with prediction',
                         default='result/prediction.txt'
                         )
