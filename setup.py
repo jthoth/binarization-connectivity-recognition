@@ -3,7 +3,7 @@ import argparse
 import numpy as np
 from time import time
 
-from skimage import io, color, img_as_float
+from skimage import io, color, img_as_float, filters
 from scipy import ndimage
 from module import threshold
 from module import components
@@ -21,7 +21,7 @@ class Program(object):
         image = io.imread(self.args.input)
         self.color_image = image
         _image = color.rgb2gray(image)
-        _image = ndimage.uniform_filter(_image, size=self.args.blur)
+        _image = ndimage.uniform_filter(_image, size=self.args.blur + 1)
         obj_threshold = threshold.Threshold(_image)
         boundary = obj_threshold.compute_global_otsu()
         return (_image > boundary).astype(np.uint8)
@@ -76,8 +76,7 @@ class Program(object):
             file_name = '{}{}{}'.format(root, os.sep, image)
             _image = io.imread(file_name, as_gray=True)
             _image = ndimage.uniform_filter(_image, size=self.args.blur)
-            obj_threshold = threshold.Threshold(_image)
-            boundary = obj_threshold.compute_global_otsu()
+            boundary = filters.threshold_local(_image, 45, offset=0.1)
             _image = (_image > boundary).astype(np.uint8)
             _image = np.pad(_image, pad_width=self.args.pad,
                             mode='constant', constant_values=1)
@@ -163,7 +162,7 @@ def main():
                         default='result/prediction.txt'
                         )
 
-    parser.add_argument('-b', '--blur', default=2, type=int)
+    parser.add_argument('-b', '--blur', default=1, type=int)
     parser.add_argument('-p', '--pad', default=1, type=int)
     parser.add_argument('-s', '--samples', default='modelsv2')
 
