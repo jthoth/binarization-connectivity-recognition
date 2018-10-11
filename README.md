@@ -1,4 +1,4 @@
-# *OCR Implementation* using natives strategies
+# *Digit Recognition* using PAI natives strategies
 
 CC5508-1 **Analysis and Image Processing**.
 
